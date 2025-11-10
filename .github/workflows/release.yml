@@ -36,12 +36,6 @@ jobs:
           git commit -m "${VERSION}" || echo "No changes"
           git push origin release/${VERSION}
 
-      - name: Import GPG key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode > private.key
-          gpg --batch --import private.key
-          rm private.key
-
       - name: Build and publish
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
