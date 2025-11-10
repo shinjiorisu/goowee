@@ -1,0 +1,216 @@
+.table>:not(caption)>*>* {
+    padding: calc(var(--elements-spacing-y) * 1.5) calc(var(--elements-spacing-x) * .15);
+    padding-right: .5rem;
+    background-color: transparent;
+    color: inherit;
+}
+
+.component-table table {
+    -webkit-touch-callout: default; /* Safari */
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.component-table thead th {
+    background-color: rgb(var(--elements-main-fg));
+}
+
+.component-table .component-label.tag {
+    font-size: .9rem;
+}
+
+.component-table ::-webkit-scrollbar {
+    width: .6rem;
+    height: .6rem;
+}
+
+.component-table ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--elements-primary-bg-shaded));
+    border-radius: var(--bs-border-radius);
+}
+
+.component-table ::-webkit-scrollbar-track {
+    margin: .6rem;
+}
+
+.component-table > .component-separator {
+    border-top-left-radius: var(--bs-border-radius-lg);
+    border-top-right-radius: var(--bs-border-radius-lg);
+    padding: .75rem;
+    padding-bottom: .5rem;
+}
+
+.component-table:has(.component-separator:not(.d-none)):has(.component-filters.d-none) .component-table-dataset-wrapper,
+.component-table:has(.component-separator:not(.d-none)):has(.component-filters:not(.d-none)) .component-filters-buttons * {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+
+.component-table:has(.component-filters:not(.d-none)) .component-separator {
+    border-bottom-right-radius: var(--bs-border-radius-lg) !important;
+}
+
+.component-table-dataset-wrapper {
+    padding-bottom: .5rem;
+    background-color: rgb(var(--elements-main-fg));
+}
+
+.component-table-dataset .table-hover tr:hover td {
+    box-shadow: none;
+}
+
+.component-table-dataset .sticky-header {
+    border-bottom: rgb(var(--elements-main-bg)) .25rem solid;
+}
+
+.component-table-dataset .component-table-header a {
+    text-decoration: none;
+    padding-right: .5rem;
+}
+
+.component-table-dataset .component-table-header a:focus-visible {
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: none;
+    outline: none;
+}
+
+.component-table-dataset tr {
+    vertical-align: middle;
+}
+
+.component-table-dataset .component-table-selection {
+    padding-top: 0;
+}
+
+.component-table-dataset th:first-child,
+.component-table-dataset td:first-child {
+    padding-left: var(--elements-spacing-x);
+}
+
+.component-table-dataset th:nth-last-child(2),
+.component-table-dataset td:nth-last-child(2) {
+    padding-right: var(--elements-spacing-x);
+}
+
+.component-table-dataset .component-table-actions,
+.component-table-dataset .component-table-actions-header,
+.component-table-dataset .component-table-cell:has([data-21-control]) {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.table-no-results {
+    width: 100% !important;
+    text-align: center;
+}
+
+.table-no-results > td:first-child:not(:has(i)) {
+    padding-top: .8rem;
+}
+
+.table-no-results > td:first-child:has(i) {
+    padding: 4rem 1rem !important;
+}
+
+.table-no-results > td:first-child i {
+    font-size: 10rem;
+}
+
+.table-no-results > td:first-child i.mb-n2 {
+    margin-bottom: -.5rem !important;
+}
+
+.component-table tr.table-no-results,
+.component-table tr.table-no-results td,
+.component-table tr.table-no-results:hover td {
+    background-color: rgb(var(--elements-main-fg));
+}
+
+.component-table:has(.table-no-results) {
+    border-radius: var(--bs-border-radius-lg);
+}
+
+.component-table-dataset:not(:has(.bootstrap-table)) {
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+}
+
+.component-table-cell select,
+.component-table-cell textarea,
+.component-table-cell textarea:focus,
+.component-table-cell input,
+.component-table-cell input:focus {
+    border-radius: var(--bs-border-radius-lg);
+    border: none;
+    font-weight: bold;
+}
+
+
+.component-table-cell:has([readonly], [disabled]) > span:not(.select2),
+.component-table-cell:has([readonly], [disabled]) > a,
+.component-table-cell:has([readonly], [disabled]) > a:hover,
+.component-table-cell:has([readonly], [disabled]) > a:focus,
+.component-table-cell:has([readonly], [disabled]) > a:focus:hover,
+.component-table-cell:has([readonly], [disabled]) > select,
+.component-table-cell:has([readonly], [disabled]) textarea,
+.component-table-cell:has([readonly], [disabled]) > input,
+.component-table-cell .component-select[disabled] + .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    box-shadow: none !important;
+    cursor: default;
+}
+
+/* COLORS
+*/
+.component-table tr.table-no-results,
+.component-table tr.table-no-results td,
+.component-table tr.table-no-results:hover td {
+    color: rgb(var(--elements-main-bg));
+}
+
+.component-table tr.table-no-results td div {
+    color: rgba(var(--elements-main-text), .7);
+    font-weight: bold;
+    margin-top: 1rem;
+}
+
+.component-table .table-hover tr.table-no-results:hover td {
+    background-color: rgb(var(--elements-main-fg));
+}
+
+.component-table-dataset .table-hover tr:hover td {
+    background-color: rgb(var(--elements-primary-bg-shaded));
+    --bs-table-hover-color: none;
+}
+
+.component-table-dataset .table-striped tbody tr:nth-of-type(odd) {
+    --bs-table-striped-bg: rgb(var(--elements-main-bg));
+}
+
+.component-table-dataset .component-table-header a {
+    color: rgb(var(--elements-primary-bg));
+}
+
+.component-table-dataset .component-table-header a:focus-visible {
+    background-color: rgba(var(--elements-primary-bg-shaded)));
+}
+
+.component-table-header .sort-asc:after {
+    display: inline-block;
+    vertical-align: .255em;
+    content: "";
+    border-top: .3em solid;
+    border-right: .3em solid transparent;
+    border-bottom: 0;
+    border-left: .3em solid transparent;
+    transform: rotate(-180deg);
+}
+
+.component-table-header .sort-desc:after {
+    display: inline-block;
+    vertical-align: .255em;
+    content: "";
+    border-top: .3em solid;
+    border-right: .3em solid transparent;
+    border-bottom: 0;
+    border-left: .3em solid transparent;
+}

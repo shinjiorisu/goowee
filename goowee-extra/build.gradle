@@ -1,0 +1,7 @@
+plugins {
+    id "goowee-plugin"
+}
+
+dependencies {
+    implementation project(":goowee-core")
+}

@@ -1,0 +1,7 @@
+plugins {
+    id "goowee-asciidoctor"
+}
+
+repositories {
+    mavenCentral()
+}

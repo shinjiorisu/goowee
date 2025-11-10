@@ -1,0 +1,10 @@
+rootProject.name = projectName
+
+include "commons-utils"
+include "goowee-core"
+include "goowee-extra"
+
+include "goowee-docs"
+//include "goowee-docs-app"
+
+include "app-test"

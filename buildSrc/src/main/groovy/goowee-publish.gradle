@@ -1,0 +1,64 @@
+plugins {
+    id "java-library"
+    id "maven-publish"
+    id "signing"
+}
+
+group = projectGroup
+version = projectVersion
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+jar {
+    into("META-INF/maven/$project.group/$project.name") {
+        from { generatePomFileForMavenJavaPublication }
+        rename ".*", "pom.xml"
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.name
+            from components.java
+            pom {
+                name = project.name
+                description = project.name
+                url = "https://goowee.org"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "gianluca.sartori"
+                        name = "Gianluca Sartori"
+                        email = "g.sartori@gmail.com"
+                    }
+                    developer {
+                        id = "francesco.piceghello"
+                        name = "Francesco Piceghello"
+                        email = "f.piceghello@gmail.com"
+                    }
+                }
+                scm {
+                    connection = 'scm:https://github.com/goowee-projects/goowee.git'
+                    url = 'https://github.com/goowee-projects'
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+    sign configurations.runtimeElements
+
+    // Send the Goowee public key to a public server for Maven Central to work
+    // gpg --keyserver keyserver.ubuntu.com --send-keys 320BDF4E3F5990F2F3AE8DC93470E26E4FB7C68E
+}

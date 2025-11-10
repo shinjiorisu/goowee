@@ -1,0 +1,30 @@
+#page-messagebox .modal-content {
+    background-color: rgb(var(--elements-frame-bg));
+    color: rgb(var(--elements-frame-text));
+}
+
+#page-messagebox .modal-footer {
+    background-color: transparent;
+    margin-bottom: 0;
+}
+
+#page-messagebox input:focus,
+#page-messagebox input {
+    border-radius: var(--bs-border-radius-lg);
+    background-color: rgba(var(--elements-frame-bg), .5);
+    border: none;
+    font-weight: bold;
+}
+
+#page-messagebox input::placeholder {
+    font-weight: normal;
+    color: rgba(var(--elements-frame-text), .7);
+}
+
+#page-messagebox .message-icon {
+    position: absolute;
+    font-size: 17rem;
+    top: -3vh;
+    left: -5vh;
+    opacity: .05;
+}

@@ -1,0 +1,50 @@
+.component-header {
+    background-color: rgb(var(--elements-main-bg));
+}
+
+.component-header .component-header-box {
+    padding: .25rem;
+    margin-bottom: .25rem;
+    border-radius: var(--bs-border-radius-lg);
+    background-color: rgba(var(--elements-main-fg), .5);
+}
+
+.component-header .row {
+    margin-right: -.75rem;
+}
+
+.component-header .component-header-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: .1rem;
+    margin-left: -.15rem;
+    padding: 0;
+}
+
+.component-header .component-header-title i {
+    margin-right: .25rem;
+}
+
+#page-content .component-header {
+    padding-top: .25rem;
+    margin-bottom: .5rem;
+}
+
+#page-modal .component-header {
+    width: 100%;
+    margin: 0;
+}
+
+#page-modal .component-header .component-header-title {
+    margin-left: -.5rem;
+}
+
+#page-modal .component-header .component-header-box {
+    background-color: rgb(var(--elements-main-bg));
+    margin-bottom : 0;
+    padding: 0;
+}
+
+.component-header-back > .component-button {
+    padding-right: .15rem;
+}

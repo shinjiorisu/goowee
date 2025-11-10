@@ -1,0 +1,34 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+    //mavenLocal()
+    maven {
+        url = 'https://repo.grails.org/grails/restricted'
+    }
+}
+
+def loadProperties() {
+    // Gives access to project root properties
+    Properties properties = new Properties()
+    FileInputStream input = new FileInputStream(file("../gradle.properties"))
+    properties.load(input)
+    input.close()
+
+    for (String key : properties.stringPropertyNames()) {
+        ext.set(key, properties.getProperty(key))
+    }
+}; loadProperties()
+
+dependencies {
+//    implementation "com.google.javascript:closure-compiler-unshaded:v20240317"
+    implementation platform("org.apache.grails:grails-bom:${grailsVersion}")
+    implementation "org.apache.grails:grails-gradle-plugins:${grailsVersion}"
+    implementation "cloud.wondrify:asset-pipeline-gradle:5.0.19"
+
+    implementation "org.asciidoctor:asciidoctor-gradle-jvm:4.0.5"
+    implementation "org.asciidoctor:asciidoctor-gradle-jvm-pdf:4.0.5"
+    implementation 'org.asciidoctor.jvm.convert:org.asciidoctor.jvm.convert.gradle.plugin:4.0.5'
+}

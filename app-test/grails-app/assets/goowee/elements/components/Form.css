@@ -1,0 +1,14 @@
+.component-form {
+    border-radius: var(--bs-border-radius-lg);
+    background-color: rgb(var(--elements-main-fg));
+    margin-bottom: .25rem;
+}
+
+.component-form form {
+    padding: .75rem;
+    padding-top: .25rem;
+}
+
+.component-form .component-label:not(.html):not(.tag) {
+    padding-left: .25rem;
+}
