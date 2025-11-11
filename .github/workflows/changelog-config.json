@@ -1,7 +1,7 @@
 {
   "changeGroups": [
     {
-      "title": "Commits",
+      "title": "What's Changed",
       "include": ["*"]
     }
   ],
