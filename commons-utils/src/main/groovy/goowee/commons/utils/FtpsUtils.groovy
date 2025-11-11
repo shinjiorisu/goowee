@@ -32,7 +32,7 @@ import java.nio.file.Paths
 
 @Slf4j
 @CompileStatic
-class FTPSUtils {
+class FtpsUtils {
 
     static Boolean verifyConnection(String host, Integer port, String username, String password, String indent = '') {
         log.info "${indent}Verifing connection to 'ftps://${host}:${port}'"

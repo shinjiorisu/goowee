@@ -27,7 +27,7 @@ import java.nio.file.Paths
 
 @Slf4j
 @CompileStatic
-class SSHUtils {
+class SshUtils {
 
     static Boolean verifyConnection(String host, Integer port, String username, String password, String indent = '') {
         println "${indent}Verifing connection to 'sftp://${host}:${port}'"
