@@ -22,9 +22,50 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 
 /**
+ * Utility class for working with dates and times.
+ * <p>
+ * Provides methods to get current date/time components, convert between
+ * {@link Date}, {@link LocalDate}, {@link LocalTime}, and {@link LocalDateTime},
+ * format dates and times, and parse strings into date/time objects.
+ * <p>
+ * Example usage:
+ * <pre>
+ * // Get current components
+ * String year = DateUtils.getCurrentYear()
+ * String month = DateUtils.getCurrentMonth()
+ * String day = DateUtils.getCurrentDay()
+ *
+ * // Generate timestamp for filename
+ * String timestamp = DateUtils.getFilenameTimestamp()
+ *
+ * // Parsing strings into date/time objects
+ * LocalDate localDate = DateUtils.parseLocalDate("25/12/2024", "dd/MM/yyyy")
+ * LocalDateTime localDateTime = DateUtils.parseLocalDateTime("25/12/2024 14:30", "dd/MM/yyyy HH:mm")
+ * LocalTime localTime = DateUtils.parseLocalTime("14:30", "HH:mm")
+ * Date date = DateUtils.parseDate("25/12/2024", "dd/MM/yyyy")
+ *
+ * // Formatting date/time objects
+ * String formattedDate = DateUtils.format(localDate, "yyyy-MM-dd")
+ * String formattedDateTime = DateUtils.format(localDateTime, "yyyy-MM-dd HH:mm")
+ * String formattedTime = DateUtils.format(localTime, "HH:mm")
+ * String formattedDateObj = DateUtils.format(date, "yyyy-MM-dd")
+ *
+ * // Conversion between Date and LocalDate/LocalDateTime/LocalTime
+ * Date fromLocalDate = DateUtils.toDate(localDate)
+ * Date fromLocalDateTime = DateUtils.toDate(localDateTime)
+ * LocalDateTime fromDateTime = DateUtils.toLocalDateTime(date)
+ * LocalDate fromDate = DateUtils.toLocalDate(date)
+ * LocalTime fromDateTime = DateUtils.toLocalTime(date)
+ *
+ * // Reformat a date string from one pattern to another
+ * String reformatted = DateUtils.reformat("25/12/2024", "dd/MM/yyyy", "yyyy-MM-dd")
+ * </pre>
+ *
+ * This class simplifies handling of date and time across different Java APIs and
+ * provides convenient methods for formatting and parsing.
+ *
  * @author Gianluca Sartori
  */
-
 @Slf4j
 @CompileStatic
 class DateUtils {
@@ -63,9 +104,10 @@ class DateUtils {
         return format(LocalDateTime.now(), 'yyyy-MM-dd-HH-mm-ss')
     }
 
-
+    // -------------------------
     // CONVERSIONS
-    //
+    // -------------------------
+
     static Date toDate(LocalDateTime localDateTime) {
         if (!localDateTime) {
             return null
@@ -116,10 +158,10 @@ class DateUtils {
         return localTime
     }
 
-
-
+    // -------------------------
     // FORMATTING
-    //
+    // -------------------------
+
     static String format(LocalDateTime dateTime, String pattern = "yyyy-MM-dd'T'HH:mm") {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(pattern)
         return dateTime.format(dtf)
@@ -149,10 +191,10 @@ class DateUtils {
         return format(localDate, patternTo)
     }
 
-
-
+    // -------------------------
     // PARSING
-    //
+    // -------------------------
+
     static LocalDateTime parseLocalDateTime(String dateTime, String pattern = 'dd/MM/yyyy HH:mm') {
         if (!dateTime) {
             return null
@@ -188,5 +230,4 @@ class DateUtils {
         SimpleDateFormat sdf = new SimpleDateFormat(pattern)
         return sdf.parse(date)
     }
-
 }
