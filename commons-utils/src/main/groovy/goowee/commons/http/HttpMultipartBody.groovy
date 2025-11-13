@@ -1,3 +1,17 @@
+/*
+ * Copyright 2021 the original author or authors.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package goowee.commons.http
 
 import groovy.json.JsonOutput
@@ -29,23 +43,23 @@ import java.nio.charset.Charset
  * @author Gianluca Sartori
  */
 @CompileStatic
-class HttpMultipart {
+class HttpMultipartBody {
 
     private final MultipartEntityBuilder builder
 
-    private HttpMultipart() {
+    private HttpMultipartBody() {
         builder = MultipartEntityBuilder.create()
         builder.setMode(HttpMultipartMode.STRICT)
         builder.setCharset(Charset.forName("UTF-8"))
     }
 
     /**
-     * Creates a new {@link HttpMultipart} builder instance.
+     * Creates a new {@link HttpMultipartBody} builder instance.
      *
-     * @return a new {@link HttpMultipart} ready for configuration
+     * @return a new {@link HttpMultipartBody} ready for configuration
      */
-    static HttpMultipart create() {
-        return new HttpMultipart()
+    static HttpMultipartBody create() {
+        return new HttpMultipartBody()
     }
 
     /**
@@ -53,9 +67,9 @@ class HttpMultipart {
      *
      * @param name the name of the form field
      * @param value the text value (empty string if null)
-     * @return this {@link HttpMultipart} instance for chaining
+     * @return this {@link HttpMultipartBody} instance for chaining
      */
-    HttpMultipart addText(String name, String value) {
+    HttpMultipartBody addText(String name, String value) {
         builder.addTextBody(name, value ?: "", ContentType.TEXT_PLAIN.withCharset("UTF-8"))
         return this
     }
@@ -65,9 +79,9 @@ class HttpMultipart {
      *
      * @param name the name of the form field
      * @param value the object to serialize as JSON
-     * @return this {@link HttpMultipart} instance for chaining
+     * @return this {@link HttpMultipartBody} instance for chaining
      */
-    HttpMultipart addJson(String name, Object value) {
+    HttpMultipartBody addJson(String name, Object value) {
         String json = JsonOutput.toJson(value)
         builder.addTextBody(name, json, ContentType.APPLICATION_JSON.withCharset("UTF-8"))
         return this
@@ -79,9 +93,9 @@ class HttpMultipart {
      * @param name the name of the form field
      * @param file the {@link File} to upload
      * @param contentType optional {@link ContentType} (defaults to binary)
-     * @return this {@link HttpMultipart} instance for chaining
+     * @return this {@link HttpMultipartBody} instance for chaining
      */
-    HttpMultipart addFile(String name, File file, ContentType contentType = ContentType.DEFAULT_BINARY) {
+    HttpMultipartBody addFile(String name, File file, ContentType contentType = ContentType.DEFAULT_BINARY) {
         builder.addBinaryBody(name, file, contentType, file.name)
         return this
     }
@@ -93,9 +107,9 @@ class HttpMultipart {
      * @param data the raw bytes to send
      * @param filename the name to assign to the uploaded file
      * @param contentType optional {@link ContentType} (defaults to binary)
-     * @return this {@link HttpMultipart} instance for chaining
+     * @return this {@link HttpMultipartBody} instance for chaining
      */
-    HttpMultipart addBytes(String name, byte[] data, String filename, ContentType contentType = ContentType.DEFAULT_BINARY) {
+    HttpMultipartBody addBytes(String name, byte[] data, String filename, ContentType contentType = ContentType.DEFAULT_BINARY) {
         builder.addBinaryBody(name, data, contentType, filename)
         return this
     }

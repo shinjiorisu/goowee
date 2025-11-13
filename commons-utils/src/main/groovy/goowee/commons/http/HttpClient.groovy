@@ -27,8 +27,9 @@ import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier
 import org.apache.hc.client5.http.ssl.TrustAllStrategy
-import org.apache.hc.core5.http.ClassicHttpResponse
 import org.apache.hc.core5.http.ContentType
+import org.apache.hc.core5.http.HttpEntity
+import org.apache.hc.core5.http.HttpEntityContainer
 import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.apache.hc.core5.http.io.entity.StringEntity
 import org.apache.hc.core5.ssl.SSLContextBuilder
@@ -122,204 +123,98 @@ class HttpClient {
         return httpClient
     }
 
-    /**
-     * Executes an HTTP GET request and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String get(CloseableHttpClient client, String uri, Map<String, String> headers = [:]) {
-        return callAsString(client, new HttpGet(uri), headers)
+    private static HttpUriRequestBase buildHttpRequest(String baseUrl, HttpRequest request) {
+        String url = request.buildUrl(baseUrl)
+
+        HttpUriRequestBase httpRequest
+        switch (request.method) {
+            case HttpMethod.GET: httpRequest = new HttpGet(url); break
+            case HttpMethod.POST: httpRequest = new HttpPost(url); break
+            case HttpMethod.PUT: httpRequest = new HttpPut(url); break
+            case HttpMethod.PATCH: httpRequest = new HttpPatch(url); break
+            case HttpMethod.DELETE: httpRequest = new HttpDelete(url); break
+            default: throw new IllegalArgumentException("Unsupported HTTP method: ${request.method}")
+        }
+
+        // Headers
+        request.headers.each { k, v -> httpRequest.setHeader(k, v) }
+        if (!request.headers.containsKey("Accept")) {
+            httpRequest.setHeader("Accept", "application/json")
+        }
+
+        // Body
+        if ((httpRequest instanceof HttpEntityContainer) && request.body != null) {
+            def entityContainer = httpRequest as HttpEntityContainer
+
+            if (request.body instanceof HttpEntity) {
+                // HttpEntity, no need to configure the content type
+                entityContainer.entity = request.body as HttpEntity
+
+            } else if (request.body instanceof String) {
+                // Generic string payload
+                ContentType contentType = request.headers.containsKey("Content-Type")
+                        ? ContentType.parse(request.headers["Content-Type"])
+                        : ContentType.TEXT_PLAIN.withCharset("UTF-8")
+                entityContainer.entity = new StringEntity(request.body as String, contentType)
+
+            } else {
+                // Oggetto generico -> serializza in JSON
+                ContentType contentType = request.headers.containsKey("Content-Type")
+                        ? ContentType.parse(request.headers["Content-Type"])
+                        : ContentType.APPLICATION_JSON.withCharset("UTF-8")
+                entityContainer.entity = new StringEntity(JsonOutput.toJson(request.body), contentType)
+            }
+        }
+
+        return httpRequest
     }
 
-    /**
-     * Executes an HTTP DELETE request and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String delete(CloseableHttpClient client, String uri, Map<String, String> headers = [:]) {
-        return callAsString(client, new HttpDelete(uri), headers)
+    static String callAsString(CloseableHttpClient client, String baseUrl, HttpRequest request) {
+        def httpRequest = buildHttpRequest(baseUrl, request)
+
+        return client.execute(httpRequest) { response ->
+            int status = response.code
+            String bodyText = response.entity ? EntityUtils.toString(response.entity) : ""
+            if (status >= 200 && status < 300) return bodyText
+            else throw new Exception("REST API Error: HTTP ${status} - ${bodyText}")
+        }
     }
 
-    /**
-     * Executes an HTTP POST request with a String body and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param body String representing the JSON body
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String post(CloseableHttpClient client, String uri, String body, Map<String, String> headers = [:]) {
-        HttpPost request = new HttpPost(uri)
-        request.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON))
-        return callAsString(client, request, headers)
+    static Map callAsJson(CloseableHttpClient client, String baseUrl, HttpRequest request) {
+        String responseText = callAsString(client, baseUrl, request)
+        if (!responseText) {
+            return [:]
+        }
+
+        try {
+            return new JsonSlurper().parseText(responseText) as Map
+        } catch (Exception ignore) {
+            return [:]
+        }
     }
 
-    /**
-     * Executes an HTTP POST request with a JSON body and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param body Map representing the JSON body
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String post(CloseableHttpClient client, String uri, Map body = [:], Map<String, String> headers = [:]) {
-        String jsonBody = JsonOutput.toJson(body)
-        return post(client, uri, jsonBody, headers)
+    static byte[] callAsByteArray(CloseableHttpClient client, String baseUrl, HttpRequest request) {
+        def httpRequest = buildHttpRequest(baseUrl, request)
+
+        if (!request.headers.containsKey("Accept")) {
+            httpRequest.setHeader("Accept", "*/*")
+        }
+
+        return client.execute(httpRequest) { response ->
+            int status = response.code
+            byte[] bytes = response.entity ? EntityUtils.toByteArray(response.entity) : new byte[0]
+            if (status >= 200 && status < 300) return bytes
+            else {
+                String errorText = ""
+                try {
+                    errorText = new String(bytes)
+                } catch (ignored) {
+                }
+                throw new Exception("API Call Error: HTTP ${status} - ${errorText}")
+            }
+        }
     }
 
-    /**
-     * Executes an HTTP POST request with multipart/form-data content.
-     * <p>
-     * Use this method when you need to send a multipart request body
-     * (for example text fields + JSON + file uploads) via POST.
-     * The provided {@link HttpMultipart} builder handles constructing
-     * the multipart entity including the boundary and content-type headers.
-     * </p>
-     *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * def multipart = HttpMultipart.create()
-     *     .addText("description", "Test upload")
-     *     .addJson("metadata", [id: 123, name:"Example"])
-     *     .addFile("file", new File("/tmp/test.pdf"))
-     *
-     * def response = HttpClient.post(client, "https://api.example.com/upload", multipart, ['Authorization':'Bearer token'])
-     * }</pre>
-     *
-     * @param client    the {@link CloseableHttpClient} instance used to perform the HTTP request
-     * @param uri       the target URI to call (absolute URL)
-     * @param multipart an {@link HttpMultipart} instance containing text, JSON or file parts
-     * @param headers   optional map of additional HTTP headers (e.g. Authorization)
-     * @return the response body as a String; empty string if no body is returned
-     * @throws Exception if the HTTP response status code is not in the 2xx range
-     */
-    static String post(CloseableHttpClient client, String uri, HttpMultipart multipart, Map<String, String> headers = [:]) {
-        HttpPost request = new HttpPost(uri)
-        headers.each { k, v -> request.setHeader(k, v) }
-        request.setEntity(multipart.build())
-        return callAsString(client, request, headers)
-    }
-
-    /**
-     * Executes an HTTP PATCH request with a String body and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param body String representing the JSON body
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String patch(CloseableHttpClient client, String uri, String body, Map<String, String> headers = [:]) {
-        HttpPatch request = new HttpPatch(uri)
-        request.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON))
-        return callAsString(client, request, headers)
-    }
-
-    /**
-     * Executes an HTTP PATCH request with a JSON body and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param body Map representing the JSON body
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String patch(CloseableHttpClient client, String uri, Map body = [:], Map<String, String> headers = [:]) {
-        String jsonBody = JsonOutput.toJson(body)
-        return patch(client, uri, jsonBody, headers)
-    }
-
-    /**
-     * Executes an HTTP PATCH request with multipart/form-data content.
-     * <p>
-     * This method allows partial updates of a resource using multipart content.
-     * Under the hood it uses the HTTP PATCH verb, sending text, JSON or file parts
-     * via the provided {@link HttpMultipart} builder.
-     * </p>
-     *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * def multipart = HttpMultipart.create()
-     *     .addText("comment", "Updated description")
-     *     .addFile("attachment", new File("/tmp/photo.jpg"))
-     *
-     * def response = HttpClient.patch(client, "https://api.example.com/item/99", multipart, ['Authorization':'Bearer token'])
-     * }</pre>
-     *
-     * @param client    the {@link CloseableHttpClient} instance used to perform the HTTP request
-     * @param uri       the target URI to call (absolute URL)
-     * @param multipart an {@link HttpMultipart} instance containing text, JSON or file parts
-     * @param headers   optional map of additional HTTP headers (e.g. Authorization)
-     * @return the response body as a String; empty string if no body is returned
-     * @throws Exception if the HTTP response status code is not in the 2xx range
-     */
-    static String patch(CloseableHttpClient client, String uri, HttpMultipart multipart, Map<String, String> headers = [:]) {
-        HttpPatch request = new HttpPatch(uri)
-        headers.each { k, v -> request.setHeader(k, v) }
-        request.setEntity(multipart.build())
-        return callAsString(client, request, headers)
-    }
-
-    /**
-     * Executes an HTTP PUT request with a JSON body and returns the response as a String.
-     *
-     * @param client HttpClient instance
-     * @param uri URI of the request
-     * @param body Map representing the JSON body
-     * @param headers Optional map of headers
-     * @return The response body as String
-     * @throws Exception if the HTTP response status is not 2xx
-     */
-    static String put(CloseableHttpClient client, String uri, Map body = [:], Map<String, String> headers = [:]) {
-        HttpPut request = new HttpPut(uri)
-        request.setEntity(new StringEntity(JsonOutput.toJson(body), ContentType.APPLICATION_JSON))
-        return callAsString(client, request, headers)
-    }
-
-    /**
-     * Executes an HTTP PUT request with multipart/form-data content.
-     * <p>
-     * Similar to the POST version but uses the HTTP PUT verb.
-     * Typically used when you need to update a resource by sending multipart content
-     * (for example metadata + files) via PUT.
-     * </p>
-     *
-     * <p>Example usage:</p>
-     * <pre>{@code
-     * def multipart = HttpMultipart.create()
-     *     .addJson("metadata", [id: 456, action:"update"])
-     *     .addFile("document", new File("/tmp/doc.pdf"))
-     *
-     * def response = HttpClient.put(client, "https://api.example.com/resource/456", multipart, ['Authorization':'Bearer token'])
-     * }</pre>
-     *
-     * @param client    the {@link CloseableHttpClient} instance used to perform the HTTP request
-     * @param uri       the target URI to call (absolute URL)
-     * @param multipart an {@link HttpMultipart} instance containing text, JSON or file parts
-     * @param headers   optional map of additional HTTP headers (e.g. Authorization)
-     * @return the response body as a String; empty string if no body is returned
-     * @throws Exception if the HTTP response status code is not in the 2xx range
-     */
-    static String put(CloseableHttpClient client, String uri, HttpMultipart multipart, Map<String, String> headers = [:]) {
-        HttpPut request = new HttpPut(uri)
-        headers.each { k, v -> request.setHeader(k, v) }
-        request.setEntity(multipart.build())
-        return callAsString(client, request, headers)
-    }
 
     /**
      * Parses a JSON string into a Map.
@@ -361,95 +256,6 @@ class HttpClient {
             return JsonOutput.toJson(map)
         } catch (Exception ignore) {
             return "{}"
-        }
-    }
-
-    /**
-     * Executes an HTTP GET request and returns the raw response body as a byte array.
-     * <p>
-     * This method is typically used for downloading binary content (e.g., PDFs, images, files).
-     * The "Accept" header is automatically set to "*\*" if not already provided.
-     * </p>
-     *
-     * @param client the {@link CloseableHttpClient} instance to use for executing the request
-     * @param uri the target URI to call (absolute URL)
-     * @param headers optional map of HTTP headers to include in the request (e.g., Authorization)
-     * @return a byte array containing the raw response body
-     * @throws Exception if the HTTP response status code is not 2xx
-     */
-    static byte[] getBytes(CloseableHttpClient client, String uri, Map<String, String> headers = [:]) {
-        HttpGet request = new HttpGet(uri)
-        if (!headers.containsKey("Accept")) headers["Accept"] = "*/*"
-        return callAsByteArray(client, request, headers)
-    }
-
-    /**
-     * Executes an HTTP request and returns the response body as a String.
-     * <p>
-     * This method is used internally by higher-level HTTP methods (GET, POST, PUT, PATCH, DELETE)
-     * to handle requests expecting textual or JSON responses. It automatically applies default
-     * "Content-Type" and "Accept" headers for JSON if not already present.
-     * </p>
-     *
-     * @param client the {@link CloseableHttpClient} used to perform the HTTP request
-     * @param request the HTTP request to execute (e.g., {@link HttpGet}, {@link HttpPost})
-     * @param headers optional map of additional HTTP headers
-     * @return the response body as a String; an empty string if the response has no body
-     * @throws Exception if the HTTP status code is not in the 2xx range
-     */
-    private static String callAsString(CloseableHttpClient client, HttpUriRequestBase request, Map<String, String> headers = [:]) {
-        headers.each { k, v -> request.setHeader(k, v) }
-
-        if (!headers.containsKey("Content-Type")) request.setHeader("Content-Type", "application/json")
-        if (!headers.containsKey("Accept")) request.setHeader("Accept", "application/json")
-
-        client.execute(request) { ClassicHttpResponse response ->
-            int status = response.code
-            String bodyText = response.entity ? EntityUtils.toString(response.entity) : ""
-
-            if (status >= 200 && status < 300) {
-                return bodyText
-            } else {
-                throw new Exception("REST API Error: HTTP ${status} - ${bodyText}")
-            }
-        }
-    }
-
-    /**
-     * Executes an HTTP request and returns the raw response body as a byte array.
-     * <p>
-     * This method is suitable for binary responses such as file downloads.
-     * It automatically applies a generic "Accept: *\*" header if not provided.
-     * In case of an error (non-2xx status code), the method attempts to decode
-     * the response body as text for debugging and includes it in the exception message.
-     * </p>
-     *
-     * @param client the {@link CloseableHttpClient} used to perform the HTTP request
-     * @param request the HTTP request to execute (e.g., {@link HttpGet}, {@link HttpPost})
-     * @param headers optional map of additional HTTP headers
-     * @return a byte array containing the raw response body
-     * @throws Exception if the HTTP status code is not in the 2xx range
-     */
-    private static byte[] callAsByteArray(CloseableHttpClient client, HttpUriRequestBase request, Map<String, String> headers = [:]) {
-        headers.each { k, v -> request.setHeader(k, v) }
-
-        if (!headers.containsKey("Accept")) request.setHeader("Accept", "*/*")
-
-        client.execute(request) { ClassicHttpResponse response ->
-            int status = response.code
-            byte[] bytes = response.entity ? EntityUtils.toByteArray(response.entity) : new byte[0]
-
-            if (status >= 200 && status < 300) {
-                return bytes
-            } else {
-                String errorText = ""
-                try {
-                    if (response.entity)
-                        errorText = new String(bytes)
-                } catch (ignored) {
-                }
-                throw new Exception("REST API Error: HTTP ${status} - ${errorText}")
-            }
         }
     }
 
