@@ -14,102 +14,227 @@
  */
 package goowee.commons.http
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 
 /**
  * Represents an HTTP request to be executed by {@link HttpClient}.
- * Provides a fluent API for setting method, path, headers, query parameters, and body.
- *
- * Example:
+ * <p>
+ * This class provides a fluent API for building HTTP requests with:
+ * <ul>
+ *     <li>HTTP method (GET, POST, PUT, DELETE, PATCH)</li>
+ *     <li>Absolute URL validation</li>
+ *     <li>Headers and query parameters</li>
+ *     <li>Request body (plain, JSON, or multipart)</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Example usage:
  * <pre>{@code
- * def request = HttpRequest.post("/api/users")
+ * def request = HttpRequest.post("https://api.example.com/v1/users")
  *     .header("Authorization", "Bearer token")
- *     .query("active", true)
- *     .jsonBody([name: "Alice"])
+ *     .body([name: "Alice"])
  * }</pre>
+ * </p>
  *
  * @author Gianluca Sartori
  */
 @CompileStatic
 class HttpRequest {
 
+    /**
+     * The HTTP method of the request (GET, POST, PUT, DELETE, PATCH).
+     */
     final HttpMethod method
-    final String path
+
+    /**
+     * The absolute URL of the request.
+     */
+    String url
+
+    /**
+     * Map of HTTP headers for the request.
+     */
     final Map<String, String> headers = [:]
+
+    /**
+     * Map of query parameters for the request.
+     */
     final Map<String, Object> query = [:]
+
+    /**
+     * The body content of the request. Can be a String, JSON object, or HttpEntity.
+     */
     Object body
 
-    private HttpRequest(HttpMethod method, String path) {
+    /**
+     * Private constructor. Use static factory methods to create instances.
+     *
+     * @param method the HTTP method for the request
+     * @param url the absolute URL of the request
+     */
+    private HttpRequest(HttpMethod method, String url) {
         this.method = method
-        this.path = path.startsWith("/") ? path : "/" + path
+        setUrl(url)
     }
 
-    // --- Static factory methods ---
-    static HttpRequest get(String path)     { new HttpRequest(HttpMethod.GET, path) }
-    static HttpRequest post(String path)    { new HttpRequest(HttpMethod.POST, path) }
-    static HttpRequest put(String path)     { new HttpRequest(HttpMethod.PUT, path) }
-    static HttpRequest delete(String path)  { new HttpRequest(HttpMethod.DELETE, path) }
-    static HttpRequest patch(String path)   { new HttpRequest(HttpMethod.PATCH, path) }
+    /**
+     * Sets and validates the absolute URL for this request.
+     * Accepts only valid HTTP or HTTPS URLs.
+     *
+     * @param url the absolute URL
+     * @return this HttpRequest instance for chaining
+     * @throws IllegalArgumentException if the URL is null, empty, malformed, or uses a non-HTTP/HTTPS scheme
+     */
+    HttpRequest setUrl(String url) {
+        if (!url) {
+            throw new IllegalArgumentException("URL cannot be null or empty")
+        }
 
-    // --- Fluent modifiers ---
+        try {
+            def uri = new URI(url)
+            if (!["http", "https"].contains(uri.scheme?.toLowerCase())) {
+                throw new IllegalArgumentException("Invalid URL scheme: ${uri.scheme}. Only HTTP/HTTPS are allowed.")
+            }
+            // Optional: Normalize (remove trailing ? or /)
+            this.url = uri.toString()
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URL format: ${url}", e)
+        }
+
+        return this
+    }
+
+    /**
+     * Creates a GET request with the specified URL.
+     *
+     * @param url the absolute URL
+     * @return a new HttpRequest instance with method GET
+     */
+    static HttpRequest GET(String url)    { new HttpRequest(HttpMethod.GET, url) }
+
+    /**
+     * Creates a POST request with the specified URL.
+     *
+     * @param url the absolute URL
+     * @return a new HttpRequest instance with method POST
+     */
+    static HttpRequest POST(String url)   { new HttpRequest(HttpMethod.POST, url) }
+
+    /**
+     * Creates a PUT request with the specified URL.
+     *
+     * @param url the absolute URL
+     * @return a new HttpRequest instance with method PUT
+     */
+    static HttpRequest PUT(String url)    { new HttpRequest(HttpMethod.PUT, url) }
+
+    /**
+     * Creates a DELETE request with the specified URL.
+     *
+     * @param url the absolute URL
+     * @return a new HttpRequest instance with method DELETE
+     */
+    static HttpRequest DELETE(String url) { new HttpRequest(HttpMethod.DELETE, url) }
+
+    /**
+     * Creates a PATCH request with the specified URL.
+     *
+     * @param url the absolute URL
+     * @return a new HttpRequest instance with method PATCH
+     */
+    static HttpRequest PATCH(String url)  { new HttpRequest(HttpMethod.PATCH, url) }
+
+    /**
+     * Adds or replaces a single HTTP header.
+     *
+     * @param name the header name
+     * @param value the header value
+     * @return this HttpRequest instance for chaining
+     */
     HttpRequest header(String name, String value) {
         if (value != null) headers[name] = value
         return this
     }
 
+    /**
+     * Adds multiple HTTP headers at once.
+     *
+     * @param values a map of header names to values
+     * @return this HttpRequest instance for chaining
+     */
     HttpRequest headers(Map<String, String> values) {
         if (values) headers.putAll(values)
         return this
     }
 
+    /**
+     * Adds a single query parameter.
+     *
+     * @param name the parameter name
+     * @param value the parameter value
+     * @return this HttpRequest instance for chaining
+     */
     HttpRequest query(String name, Object value) {
         if (value != null) query[name] = value
         return this
     }
 
+    /**
+     * Adds multiple query parameters at once.
+     *
+     * @param params a map of parameter names to values
+     * @return this HttpRequest instance for chaining
+     */
     HttpRequest query(Map<String, Object> params) {
         if (params) query.putAll(params)
         return this
     }
 
-    HttpRequest body(String body) {
+    /**
+     * Sets the body of the request.
+     *
+     * @param body the request body, can be a String, JSON object, or HttpEntity
+     * @return this HttpRequest instance for chaining
+     */
+    HttpRequest body(Object body) {
         this.body = body
         return this
     }
 
-    HttpRequest jsonBody(Object body) {
-        header("Content-Type", "application/json; charset=UTF-8")
-        this.body = JsonOutput.toJson(body)
-        return this
-    }
-
+    /**
+     * Sets a multipart body for the request.
+     *
+     * @param multipart the {@link HttpMultipartBody} instance
+     * @return this HttpRequest instance for chaining
+     */
     HttpRequest multipartBody(HttpMultipartBody multipart) {
-        headers.remove("Content-Type")
         this.body = multipart.build()
         return this
     }
 
+    /**
+     * Builds the final URL string including encoded query parameters.
+     *
+     * @return the full URL with query parameters
+     */
+    String buildUrl() {
+        if (query.isEmpty()) return url
 
-    // --- Helpers ---
-    String buildUrl(String baseUrl) {
-        StringBuilder sb = new StringBuilder()
-        sb << baseUrl
-        if (path) {
-            if (baseUrl.endsWith("/") && path.startsWith("/"))
-                sb << path.substring(1)
-            else
-                sb << path
-        }
-        if (!query.isEmpty()) {
-            sb << "?"
-            sb << query.collect { k, v -> "${URLEncoder.encode(k, 'UTF-8')}=${URLEncoder.encode(v.toString(), 'UTF-8')}" }.join("&")
-        }
-        return sb.toString()
+        String queryString = query.collect { k, v ->
+            "${URLEncoder.encode(k, 'UTF-8')}=${URLEncoder.encode(v.toString(), 'UTF-8')}"
+        }.join("&")
+
+        return url.contains("?") ? "${url}&${queryString}" : "${url}?${queryString}"
     }
 
+    /**
+     * Returns a string representation of the HTTP request,
+     * including method, URL, headers, and query parameters.
+     *
+     * @return string representation of the request
+     */
     @Override
     String toString() {
-        return "${method} ${path} headers=${headers.keySet()} query=${query}"
+        return "${method} ${url} headers=${headers.keySet()} query=${query}"
     }
 }

@@ -16,18 +16,18 @@ package goowee.commons.http
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
-import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder
 import org.apache.hc.client5.http.entity.mime.HttpMultipartMode
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder
 import org.apache.hc.core5.http.ContentType
 import org.apache.hc.core5.http.HttpEntity
 
 import java.nio.charset.Charset
 
 /**
- * Builder-style utility for constructing multipart/form-data requests.
+ * Builder-style utility for constructing multipart/form-data HTTP requests.
  * <p>
- * Provides a fluent API for adding text, JSON, binary or file parts
- * to an HTTP request.
+ * Provides a fluent API for adding text, JSON, binary, or file parts
+ * to an HTTP request. All fields are encoded in UTF-8 by default.
  * </p>
  *
  * <p>Example usage:</p>
@@ -40,6 +40,14 @@ import java.nio.charset.Charset
  * def response = HttpClient.post(client, "https://example.com/api/upload", multipart)
  * }</pre>
  *
+ * <p>Features:</p>
+ * <ul>
+ *   <li>Fluent builder API for ease of use</li>
+ *   <li>Support for text, JSON, file, and binary fields</li>
+ *   <li>Automatic JSON serialization using {@link JsonOutput}</li>
+ *   <li>UTF-8 encoding by default</li>
+ * </ul>
+ *
  * @author Gianluca Sartori
  */
 @CompileStatic
@@ -47,6 +55,9 @@ class HttpMultipartBody {
 
     private final MultipartEntityBuilder builder
 
+    /**
+     * Private constructor. Initializes the multipart builder with STRICT mode and UTF-8 charset.
+     */
     private HttpMultipartBody() {
         builder = MultipartEntityBuilder.create()
         builder.setMode(HttpMultipartMode.STRICT)
@@ -75,16 +86,28 @@ class HttpMultipartBody {
     }
 
     /**
-     * Adds a JSON field to the multipart request.
+     * Adds a field to the multipart request, serializing the given object as JSON.
+     * <p>
+     * This method converts the provided {@code value} to its JSON representation
+     * using Groovy's {@link groovy.json.JsonOutput} and adds it to the underlying
+     * multipart builder with the specified {@code name} and content type
+     * {@code application/json; charset=UTF-8}.
+     * </p>
      *
-     * @param name the name of the form field
-     * @param value the object to serialize as JSON
+     * @param name  the name of the form field to add
+     * @param value the object to serialize as JSON; must be serializable by {@link JsonOutput}
      * @return this {@link HttpMultipartBody} instance for chaining
+     * @throws Exception if the object cannot be serialized to JSON
      */
     HttpMultipartBody addJson(String name, Object value) {
-        String json = JsonOutput.toJson(value)
-        builder.addTextBody(name, json, ContentType.APPLICATION_JSON.withCharset("UTF-8"))
-        return this
+        try {
+            String json = JsonOutput.toJson(value)
+            builder.addTextBody(name, json, ContentType.APPLICATION_JSON.withCharset("UTF-8"))
+            return this
+
+        } catch (Exception e) {
+            throw new Exception("Body of type '${value.getClass()}' is not supported: ${e.message ?: e.cause.message}")
+        }
     }
 
     /**
