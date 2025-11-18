@@ -172,7 +172,7 @@ class TenantPropertyController implements ElementsController {
                     id: 'name',
                     textStyle: TextStyle.MONOSPACE,
                     textTransform: TextTransform.UPPERCASE,
-                    readonly: obj.name,
+                    readonly: obj.name && !securityService.isDeveloper(),
                     cols: 9,
             )
             addField(
