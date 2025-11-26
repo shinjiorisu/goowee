@@ -17,23 +17,18 @@ package goowee.security
 import goowee.audit.AuditOperation
 import goowee.audit.AuditService
 import goowee.commons.utils.StringUtils
-import goowee.core.PrettyPrinterDecimalFormat
-import goowee.elements.pages.ShellService
-import goowee.core.ApplicationService
-import goowee.core.Feature
-import goowee.core.LinkGeneratorAware
+import goowee.core.*
 import goowee.elements.Menu
-import goowee.properties.SystemPropertyService
-import goowee.core.WebRequestAware
+import goowee.elements.pages.Shell
+import goowee.elements.pages.ShellService
 import goowee.exceptions.ArgsException
 import goowee.exceptions.GooweeException
-import goowee.elements.pages.Shell
-import goowee.tenants.TTenant
+import goowee.properties.SystemPropertyService
 import goowee.properties.TenantPropertyService
+import goowee.tenants.TTenant
 import goowee.tenants.TenantService
 import goowee.utils.EnvUtils
 import grails.gorm.DetachedCriteria
-import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.SpringSecurityUtils
@@ -108,30 +103,31 @@ class SecurityService implements WebRequestAware, LinkGeneratorAware {
     }
 
     void install() {
-        String tenantId = tenantService.currentTenantId
         String defaultTenantId = tenantService.defaultTenantId
-
+        createGroup(failOnError: true, ignoreGroupNameCollisions: true, tenantId: defaultTenantId, name: GROUP_USERS, authorities: [ROLE_USER], deletable: false)
         createGroup(failOnError: true, ignoreGroupNameCollisions: true, tenantId: defaultTenantId, name: GROUP_SUPERADMINS, authorities: [ROLE_SUPERADMIN], deletable: false)
+        createAuthority(ROLE_SECURITY)
+
+        createSystemUser(
+                tenantId: defaultTenantId,
+                groups: [GROUP_SUPERADMINS],
+                firstname: 'Super',
+                lastname: 'Admin',
+                username: USERNAME_SUPERADMIN,
+                password: USERNAME_SUPERADMIN,
+                sessionDuration: EnvUtils.isDevelopment() ? 60 : 5, // always 5 minutes in production for the SuperAdmin
+                rememberMeDuration: EnvUtils.isDevelopment() ? 12 * 60 : 5, // always 5 minutes in production for the SuperAdmin
+        )
+    }
+
+    void tenantInstall() {
+        String tenantId = tenantService.currentTenantId
+
         createGroup(failOnError: true, ignoreGroupNameCollisions: true, tenantId: tenantId, name: GROUP_USERS, authorities: [ROLE_USER], deletable: false)
         createGroup(failOnError: true, ignoreGroupNameCollisions: true, tenantId: tenantId, name: GROUP_DEVELOPERS, authorities: [ROLE_DEVELOPER], deletable: false)
         createGroup(failOnError: true, ignoreGroupNameCollisions: true, tenantId: tenantId, name: GROUP_ADMINS, authorities: [ROLE_ADMIN], deletable: false)
 
-        createAuthority(ROLE_SECURITY)
-
-        if (tenantId == defaultTenantId) {
-            createSystemUser(
-                    tenantId: defaultTenantId,
-                    groups: [GROUP_SUPERADMINS],
-                    firstname: 'Super',
-                    lastname: 'Admin',
-                    username: USERNAME_SUPERADMIN,
-                    password: USERNAME_SUPERADMIN,
-                    sessionDuration: EnvUtils.isDevelopment() ? 60 : 5, // always 5 minutes in production for the SuperAdmin
-                    rememberMeDuration: EnvUtils.isDevelopment() ? 12 * 60 : 5, // always 5 minutes in production for the SuperAdmin
-            )
-        }
-
-        String username = getAdminUsername()
+        String username = buildAdminUsername()
         createSystemUser(
                 tenantId: tenantId,
                 username: username,
@@ -461,7 +457,7 @@ class SecurityService implements WebRequestAware, LinkGeneratorAware {
         initializeShell()
 
         // Executes custom login code
-        applicationService.executeBootEvents('afterLogin', tenantService.currentTenantId, session)
+        applicationService.executeBootEvents('afterLogin', session)
 
         String tenantId = tenantService.currentTenantId
         log.info "${tenantId} Tenant - Login '${currentUsername}', language '${currentLanguage}', authorised for ${currentUserAuthorities}"
@@ -504,7 +500,7 @@ class SecurityService implements WebRequestAware, LinkGeneratorAware {
      */
     void executeAfterLogout() {
         auditService.log(AuditOperation.LOGOUT, "-")
-        applicationService.executeBootEvents('afterLogout', tenantService.currentTenantId)
+        applicationService.executeBootEvents('afterLogout')
         executeLogout()
     }
 
@@ -1146,7 +1142,7 @@ class SecurityService implements WebRequestAware, LinkGeneratorAware {
         return results
     }
 
-    String getAdminUsername() {
+    String buildAdminUsername() {
         String tenantId = tenantService.currentTenantId
         if (tenantId == tenantService.defaultTenantId) {
             return 'admin'

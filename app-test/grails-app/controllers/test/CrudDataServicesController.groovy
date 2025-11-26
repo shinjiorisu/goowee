@@ -14,20 +14,12 @@
  */
 package test
 
+import goowee.elements.ElementsController
 import goowee.elements.components.TableRow
 import goowee.elements.contents.ContentCreate
 import goowee.elements.contents.ContentEdit
 import goowee.elements.contents.ContentTable
-import goowee.elements.ElementsController
-import goowee.elements.controls.Checkbox
-import goowee.elements.controls.DateField
-import goowee.elements.controls.MoneyField
-import goowee.elements.controls.NumberField
-import goowee.elements.controls.QuantityField
-import goowee.elements.controls.Select
-import goowee.elements.controls.TextField
-import goowee.elements.controls.Textarea
-import goowee.elements.controls.Upload
+import goowee.elements.controls.*
 import goowee.types.Type
 
 import java.time.LocalDate

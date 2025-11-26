@@ -14,24 +14,16 @@
  */
 package test
 
+import goowee.elements.ElementsController
 import goowee.elements.components.Form
 import goowee.elements.components.Header
 import goowee.elements.components.Table
 import goowee.elements.components.TableRow
 import goowee.elements.contents.ContentCreate
 import goowee.elements.contents.ContentEdit
-import goowee.elements.ElementsController
-import goowee.elements.controls.Checkbox
-import goowee.elements.controls.DateField
-import goowee.elements.controls.MoneyField
-import goowee.elements.controls.NumberField
-import goowee.elements.controls.QuantityField
-import goowee.elements.controls.Select
-import goowee.elements.controls.TextField
-import goowee.elements.controls.Upload
+import goowee.elements.controls.*
 import goowee.elements.style.TextAlign
 import goowee.elements.style.TextDefault
-import grails.gorm.multitenancy.CurrentTenant
 
 class CrudCustomController implements ElementsController {
 
@@ -343,7 +335,7 @@ class CrudCustomController implements ElementsController {
     }
 
     def onCreate() {
-        TPerson obj = personService.create(params)
+        def obj = personService.create(params)
         if (obj.hasErrors()) {
             display errors: obj
             return
@@ -358,13 +350,13 @@ class CrudCustomController implements ElementsController {
 
     def edit() {
         def c = buildForm(create: false)
-        TPerson obj = personService.get(params.id)
+        def obj = personService.get(params.id)
         c.form.values = obj
         display content: c, modal: true, wide: true
     }
 
     def onEdit() {
-        TPerson obj = personService.update(params)
+        def obj = personService.update(params)
         if (obj.hasErrors()) {
             display errors: obj
         } else {
@@ -372,9 +364,9 @@ class CrudCustomController implements ElementsController {
         }
     }
 
-    def onDelete(TPerson obj) {
+    def onDelete() {
         try {
-            personService.delete(obj.id)
+            personService.delete(params.id)
             display action: 'index'
 
         } catch (e) {

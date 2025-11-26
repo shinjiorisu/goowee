@@ -17,7 +17,6 @@ package goowee.security
 import goowee.commons.utils.CryptoUtils
 import goowee.core.ApplicationService
 import goowee.tenants.TenantService
-import grails.gorm.multitenancy.CurrentTenant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
@@ -32,7 +31,7 @@ class CryptoService {
     ApplicationService applicationService
     TenantService tenantService
 
-    void install() {
+    void tenantInstall() {
         byte[] password = CryptoUtils.generateAESKey()
         CryptoUtils.saveAESKey(password, tenantAESKeyPathname)
         applicationService.setAttribute(tenantAESKeyAttributeName, password)

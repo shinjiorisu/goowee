@@ -28,10 +28,9 @@ import grails.web.servlet.mvc.GrailsHttpSession
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import jakarta.servlet.ServletContext
 import org.grails.io.support.PathMatchingResourcePatternResolver
 import org.grails.io.support.Resource
-
-import jakarta.servlet.ServletContext
 
 /**
  * Application API
@@ -108,20 +107,12 @@ class ApplicationService implements LinkGeneratorAware {
         connectionSourceService.installOrConnect()
 
         if (!systemInstalled) {
-            systemPropertyService.install()
-            tenantService.install()
+            executeOnPluginInstall()
             executeOnInstall()
         }
 
-        // Tenant Provisioning
-        tenantService.eachTenant { String tenantId ->
-            tenantService.provisionTenant(tenantId)
-        }
-
-        // Tenant Updates
-        tenantService.eachTenant { String tenantId ->
-            tenantService.provisionTenantUpdate(tenantId)
-        }
+        tenantService.provisionAllTenants()
+        tenantService.updateAllTenants()
     }
 
     /**
@@ -210,6 +201,14 @@ class ApplicationService implements LinkGeneratorAware {
      * Used by the application to register a setup closure. The closure will be executed only once.
      * @param closure a closure containing specific setup code
      */
+    void onPluginTenantInstall(@DelegatesTo(ApplicationService) Closure closure = { /* No setup */ }) {
+        registerBootEvent('onPluginTenantInstall', closure)
+    }
+
+    /**
+     * Used by the application to register a setup closure. The closure will be executed only once.
+     * @param closure a closure containing specific setup code
+     */
     void onTenantInstall(@DelegatesTo(ApplicationService) Closure closure = { /* No setup */ }) {
         registerBootEvent('onTenantInstall', closure)
     }
@@ -281,43 +280,56 @@ class ApplicationService implements LinkGeneratorAware {
     void executeOnInstall() {
         if (hasBootEvents('onInstall')) {
             log.info "-" * 78
-            log.info "INSTALLING"
+            log.info "INSTALLING APPLICATION"
             log.info "-" * 78
 
-            executeInstall('onInstall', 'DEFAULT')
+            executeInstall('onInstall')
         }
     }
 
-    void executeOnPluginInstall(String tenantId) {
+    void executeOnPluginInstall() {
         if (hasBootEvents('onPluginInstall')) {
             log.info "-" * 78
-            log.info "${tenantId} Tenant - INSTALLING PLUGINS"
+            log.info "INSTALLING PLUGINS"
             log.info "-" * 78
 
-            executeInstall('onPluginInstall', tenantId)
+            executeInstall('onPluginInstall')
         }
     }
 
-    void executeOnTenantInstall(String tenantId) {
-        if (hasBootEvents('onTenantInstall') || hasBootEvents('onDevInstall')) {
+    void executeOnPluginTenantInstall() {
+        String tenantId = tenantService.currentTenantId
+        if (hasBootEvents('onPluginTenantInstall')) {
             log.info "-" * 78
-            log.info "${tenantId} Tenant - INSTALLING"
+            log.info "${tenantId} Tenant - SETTING UP PLUGINS"
             log.info "-" * 78
 
-            executeInstall('onTenantInstall', tenantId)
+            executeInstall('onPluginTenantInstall', false, true)
+        }
+    }
+
+    void executeOnTenantInstall() {
+        String tenantId = tenantService.currentTenantId
+        if (hasBootEvents('onTenantInstall') || hasBootEvents('onDevInstall')) {
+            log.info "-" * 78
+            log.info "${tenantId} Tenant - SETTING UP APPLICATION"
+            log.info "-" * 78
+
+            executeInstall('onTenantInstall')
             if (EnvUtils.isDevelopment()) {
-                executeInstall('onDevInstall', tenantId, true)
+                executeInstall('onDevInstall', true)
             }
         }
     }
 
-    void executeOnUpdate(String tenantId) {
+    void executeOnUpdate() {
+        String tenantId = tenantService.currentTenantId
         if (hasBootEvents('onUpdate')) {
             log.info "-" * 78
-            log.info "${tenantId} Tenant - UPDATING"
+            log.info "${tenantId} Tenant - UPDATING APPLICATION"
             log.info "-" * 78
 
-            executeInstall('onUpdate', tenantId, false, true)
+            executeInstall('onUpdate', false, true)
         }
     }
 
@@ -335,7 +347,8 @@ class ApplicationService implements LinkGeneratorAware {
 
     @CompileDynamic
     @Transactional
-    private void executeInstall(String listName, String tenantId, Boolean isDev = false, Boolean sort = false) {
+    private void executeInstall(String listName, Boolean isDev = false, Boolean sort = false) {
+        String tenantId = tenantService.currentTenantId
         Map<String, Closure> eventList = getBootEvents(listName)
         Map revisionList = sort ? eventList.sort() : eventList
 
@@ -375,13 +388,14 @@ class ApplicationService implements LinkGeneratorAware {
      *
      * @param listName Name of the list to execute
      */
-    void executeBootEvents(String listName, String tenantId = null, GrailsHttpSession session = null) {
+    void executeBootEvents(String listName, GrailsHttpSession session = null) {
+        String tenantId = tenantService.currentTenantId
         Map<String, Closure> eventList = getBootEvents(listName)
         for (revision in eventList) {
             String revisionName = revision.key
             Closure closure = revision.value
 
-            log.info "Executing '${revisionName}'..."
+            log.info "${tenantId} Tenant - Executing '${revisionName}'..."
             if (closure.maximumNumberOfParameters == 1) {
                 closure.call(tenantId)
             } else {
@@ -404,19 +418,19 @@ class ApplicationService implements LinkGeneratorAware {
 
     private void executeBeforeTenantInit() {
         tenantService.eachTenant { String tenantId ->
-            executeBootEvents('beforeTenantInit', tenantId)
+            executeBootEvents('beforeTenantInit')
         }
     }
 
     private void executeOnTenantInit() {
         tenantService.eachTenant { String tenantId ->
-            executeBootEvents('onTenantInit', tenantId)
+            executeBootEvents('onTenantInit')
         }
     }
 
     private void executeAfterTenantInit() {
         tenantService.eachTenant { String tenantId ->
-            executeBootEvents('afterTenantInit', tenantId)
+            executeBootEvents('afterTenantInit')
         }
     }
 

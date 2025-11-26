@@ -15,8 +15,8 @@
 package goowee.audit
 
 import goowee.commons.utils.DateUtils
-import goowee.elements.Elements
 import goowee.core.WebRequestAware
+import goowee.elements.Elements
 import goowee.security.CryptoService
 import goowee.security.SecurityService
 import grails.gorm.DetachedCriteria

@@ -14,11 +14,11 @@
  */
 package goowee.core
 
-import goowee.elements.pages.ShellService
 import goowee.elements.pages.PageService
+import goowee.elements.pages.ShellService
+import goowee.properties.TenantPropertyService
 import goowee.security.CryptoService
 import goowee.security.SecurityService
-import goowee.properties.TenantPropertyService
 import goowee.types.Money
 import goowee.types.Quantity
 import goowee.types.Types
@@ -41,12 +41,18 @@ class BootStrap {
 
     def init = {
 
-        applicationService.onPluginInstall { String tenantId ->
+        applicationService.onPluginInstall {
+            systemPropertyService.install()
+            tenantService.install()
             securityService.install()
-            cryptoService.install()
-            tenantPropertyService.install()
-            pageService.install(tenantId)
-            shellService.install(tenantId)
+        }
+
+        applicationService.onPluginTenantInstall { String tenantId ->
+            securityService.tenantInstall()
+            cryptoService.tenantInstall()
+            tenantPropertyService.tenantInstall()
+            pageService.tenantInstall()
+            shellService.tenantInstall()
         }
 
         applicationService.beforeInit {

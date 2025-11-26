@@ -27,6 +27,7 @@ class CompanyService {
         def query = TCompany.where {}
 
         if (filterParams.containsKey('id')) query = query.where { id == filterParams.id }
+        if (filterParams.containsKey('name')) query = query.where { name == filterParams.name }
 
         if (filterParams.find) {
             String search = filterParams.find.replaceAll('\\*', '%')
@@ -41,7 +42,12 @@ class CompanyService {
     }
 
     TCompany get(Serializable id) {
-        return TCompany.get(id)
+        // Add single-sided relationships here (Eg. references to other Domain Objects)
+        Map fetch = [
+                employees: 'join',
+        ]
+
+        return buildQuery(id: id).get(fetch: fetch)
     }
 
     List<TCompany> list(Map filterParams = [:], Map fetchParams = [:]) {
@@ -49,8 +55,8 @@ class CompanyService {
 
         // Add single-sided relationships here (Eg. references to other DomainObjects)
         // DO NOT add hasMany relationships, you are going to have troubles with pagination
-        fetchParams.fetch = [
-                company: 'join',
+        fetchParams.fetch = [:
+//                employees: 'join',
         ]
 
         def query = buildQuery(filterParams)

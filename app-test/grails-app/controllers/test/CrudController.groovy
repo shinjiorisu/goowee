@@ -15,39 +15,30 @@
 package test
 
 import goowee.audit.AuditService
+import goowee.core.ApplicationService
+import goowee.elements.ElementsController
 import goowee.elements.components.Form
 import goowee.elements.components.TableRow
 import goowee.elements.contents.ContentCreate
 import goowee.elements.contents.ContentEdit
 import goowee.elements.contents.ContentForm
 import goowee.elements.contents.ContentTable
-import goowee.core.ApplicationService
-import goowee.elements.ElementsController
-import goowee.elements.controls.Checkbox
-import goowee.elements.controls.DateField
-import goowee.elements.controls.MoneyField
-import goowee.elements.controls.NumberField
-import goowee.elements.controls.QuantityField
-import goowee.elements.controls.Select
-import goowee.elements.controls.TextField
-import goowee.elements.controls.Textarea
-import goowee.elements.controls.Upload
+import goowee.elements.controls.*
 import goowee.elements.style.TextDefault
 import goowee.elements.style.TextWrap
 import goowee.types.QuantityService
 import goowee.types.Type
-import grails.gorm.multitenancy.CurrentTenant
 import grails.plugin.springsecurity.annotation.Secured
 
 import java.time.LocalDate
 
-@CurrentTenant
 class CrudController implements ElementsController {
 
     AuditService auditService
     ApplicationService applicationService
     QuantityService quantityService
     PersonService personService
+    CompanyService companyService
 
     def index() {
 
@@ -100,7 +91,7 @@ class CrudController implements ElementsController {
                     addField(
                             class: Select,
                             id: 'company',
-                            optionsFromRecordset: TCompany.list(),
+                            optionsFromRecordset: personService.list(),
                             transformer: 'TRANSFORM_ME',
 //                            renderTextPrefix: true,
                             multiple: true,
@@ -193,7 +184,7 @@ class CrudController implements ElementsController {
 
                 body.eachRow { TableRow row, Map values ->
                     values.prettyMap = [a: 'This', b: "is", c: "a", d: "Map"]
-                    values.prettyObjectList = [new TCompany(name: 'Company 1'), new TCompany(name: 'Company 2')]
+                    values.prettyObjectList = [personService.create(name: 'Company 1'), personService.create(name: 'Company 2')]
                     row.cells.prettyHtml.html = 'table.cell.label.html'
 //                    row.verticalAlign = VerticalAlign.TOP
                     row.cells.postcode.tag = true
@@ -204,7 +195,8 @@ class CrudController implements ElementsController {
                     row.cells['company'].tooltip = 'Questa è una azienda'
                     row.cells['company'].url = 'https://google.com'
 
-                    values.employeeCount = values.company.employees?.size()
+                    TCompany company = companyService.get(values.company.id)
+                    values.employeeCount = company.employees.size()
 
                     if (values.salary) println prettyPrint(values.salary)
                     if (values.picture) row.cells.picture.icon = 'fa-file'
@@ -246,16 +238,16 @@ class CrudController implements ElementsController {
     }
 
     def onCreateRecords() {
-        TCompany dueuno = TCompany.get(1)
+        TCompany dueuno = companyService.get(1)
 
         (1..100).each {
-            new TPerson(
+            personService.create(
                     active: true,
                     company: dueuno,
                     name: 'user' + it,
                     address: 'Via del\'automazione, ' + it,
                     postcode: 12345
-            ).save(flush: true, failOnError: true)
+            )
         }
 
         display action: 'index'
@@ -285,15 +277,13 @@ class CrudController implements ElementsController {
 
         c.form.with {
             validate = TPerson
+
             addKeyField('embedded')
-
-            //TODO: Fare in modo che l'azione riceva i dati convertiti in base al loro tipo
             addKeyField('selection', Type.LIST, [[id: 1]])
-
             addField(
                     class: Select,
                     id: 'company',
-                    optionsFromRecordset: TCompany.list(),
+                    optionsFromRecordset: companyService.list(),
                     prettyPrinter: 'customCompanyPrinter',
                     onChange: 'onCompanyChange',
             )
@@ -354,7 +344,7 @@ class CrudController implements ElementsController {
 
     def onCompanyChange() {
         def t = createTransition()
-        def company = TCompany.get(params.company)
+        def company = companyService.get(params.company)
         t.setValue('companyName', company?.name)
         t.set('name', 'readonly', company)
         display transition: t
@@ -365,13 +355,14 @@ class CrudController implements ElementsController {
         display content: c, modal: true
     }
 
-    def edit(TPerson obj) {
+    def edit() {
+        def obj = personService.get(params.id)
         def c = buildForm(obj)
         display content: c, modal: true
     }
 
     def onCreate() {
-        TPerson obj = personService.create(params)
+        def obj = personService.create(params)
         if (obj.hasErrors()) {
             display errors: obj
             return
@@ -385,7 +376,7 @@ class CrudController implements ElementsController {
     }
 
     def onEdit() {
-        TPerson obj = personService.update(params)
+        def obj = personService.update(params)
         if (obj.hasErrors()) {
             display errors: obj
         } else {
@@ -393,9 +384,9 @@ class CrudController implements ElementsController {
         }
     }
 
-    def onDelete(TPerson obj) {
+    def onDelete() {
         try {
-            personService.delete(obj.id)
+            personService.delete(params.id)
             display action: 'index'
 
         } catch (e) {

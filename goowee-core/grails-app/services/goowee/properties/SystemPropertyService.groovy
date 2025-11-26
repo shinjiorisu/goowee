@@ -24,7 +24,6 @@ import grails.gorm.transactions.Transactional
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-
 import jakarta.annotation.PostConstruct
 
 /**
