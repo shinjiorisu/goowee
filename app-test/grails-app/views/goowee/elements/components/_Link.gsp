@@ -12,8 +12,8 @@
 <g:else>
     <% text = c.text %>
     <g:if test="${c.image}">
-        <g:if test="${c.imageFromAssets}"><i><asset:image src="${c.image}" class="${text ? 'me-1' : ''} ${c.imageClass}"/></i></g:if>
-        <g:else><i><img src="${c.image}" class="${text ? 'me-1' : ''} ${c.imageClass}"/></i></g:else>
+        <g:if test="${c.imageFromAssets}"><i><asset:image src="${c.image}" class="${c.imageClass}"/></i></g:if>
+        <g:else><i><img src="${c.image}" class="${c.imageClass}"/></i></g:else>
     </g:if>
     <g:elseif test="${c.icon}"><render:icon icon="${c.icon}" /></g:elseif>
     <g:if test="${c.text}"><span class="${c.textStyle}">${text}</span></g:if>

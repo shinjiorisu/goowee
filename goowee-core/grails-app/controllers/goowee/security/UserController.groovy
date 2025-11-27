@@ -366,12 +366,18 @@ class UserController implements ElementsController {
                     search: false,
                     cols: 6,
             )
+
+            addField(
+                    class: Separator,
+                    id: 'appearance',
+                    icon: 'fa-circle-half-stroke',
+            )
             if (securityService.isDeveloper()) {
                 addField(
                         class: NumberField,
                         id: 'fontSize',
                         defaultValue: 14,
-                        cols: 3,
+                        cols: 4,
                         colsSmall: 6,
                 )
             } else {
@@ -381,7 +387,7 @@ class UserController implements ElementsController {
                         optionsFromList: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
                         defaultValue: 14,
                         renderTextPrefix: false,
-                        cols: 3,
+                        cols: 4,
                         colsSmall: 6,
                 )
             }
@@ -390,14 +396,14 @@ class UserController implements ElementsController {
                     id: 'guiStyle',
                     optionsFromEnum: GuiStyle,
                     textPrefix: 'default',
-                    cols: 3,
+                    cols: 4,
                     colsSmall: 6,
             )
             addField(
                     class: Checkbox,
                     id: 'animations',
                     defaultValue: true,
-                    cols: 6,
+                    cols: 4,
             )
         }
     }
