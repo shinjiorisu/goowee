@@ -74,7 +74,7 @@
 }
 
 .select2-container--bootstrap-5 .select2-selection {
-    border-radius: var(--bs-border-radius-lg);
+    border-radius: var(--bs-border-radius);
     font-weight: bold;
     padding: 0;
     padding-right: 1.2rem;
@@ -117,7 +117,7 @@
 }
 
 .select2-container--bootstrap-5 .select2-dropdown .select2-search .select2-search__field {
-    border-radius: var(--bs-border-radius-lg);
+    border-radius: var(--bs-border-radius);
     border: 0;
     background-color: rgb(var(--elements-main-bg));
     color: rgb(var(--elements-main-text));
